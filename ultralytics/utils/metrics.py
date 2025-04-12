@@ -468,27 +468,29 @@ def smooth(y, f=0.05):
     yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
 
-
 @plt_settings()
 def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None):
-    # ... (kode sebelumnya tetap sama)
+    """Plots a precision-recall curve."""
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6), tight_layout=True)
+    py = np.stack(py, axis=1)
 
-    # Simpan ke CSV
-    csv_path = save_dir.with_suffix(".csv")  # Ganti ekstensi dari .png ke .csv
-    py_array = np.stack(py, axis=1)  # Precision values (shape: [n_points, n_classes])
-    
-    # Buat DataFrame
-    df = pd.DataFrame({
-        "Recall": px,  # Nilai Recall (sumbu X)
-        **{f"Precision_class_{i}": py_array[:, i] for i in range(py_array.shape[1])},  # Precision tiap kelas
-        "mAP": py.mean(1)  # Precision rata-rata (garis biru)
-    })
-    
-    df.to_csv(csv_path, index=False)  # Simpan ke CSV
-    print(f"PR curve data saved to {csv_path}")
+    if 0 < len(names) < 21:  # display per-class legend if < 21 classes
+        for i, y in enumerate(py.T):
+            ax.plot(px, y, linewidth=1, label=f"{names[i]} {ap[i, 0]:.3f}")  # plot(recall, precision)
+    else:
+        ax.plot(px, py, linewidth=1, color="grey")  # plot(recall, precision)
 
-    # ... (kode plot dan save gambar tetap ada)
-
+    ax.plot(px, py.mean(1), linewidth=3, color="blue", label=f"all classes {ap[:, 0].mean():.3f} mAP@0.5")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    ax.set_title("Precision-Recall Curve")
+    fig.savefig(save_dir, dpi=250)
+    plt.close(fig)
+    if on_plot:
+        on_plot(save_dir)
 
 @plt_settings()
 def plot_mc_curve(px, py, save_dir=Path("mc_curve.png"), names={}, xlabel="Confidence", ylabel="Metric", on_plot=None):
