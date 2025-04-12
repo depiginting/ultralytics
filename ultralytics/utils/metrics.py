@@ -465,20 +465,12 @@ def smooth(y, f=0.05):
     yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
 
+###########################
+import pandas as pd
 
 @plt_settings()
-def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None):
-    """
-    Plot precision-recall curve.
-
-    Args:
-        px (np.ndarray): X values for the PR curve.
-        py (np.ndarray): Y values for the PR curve.
-        ap (np.ndarray): Average precision values.
-        save_dir (Path, optional): Path to save the plot.
-        names (dict, optional): Dictionary mapping class indices to class names.
-        on_plot (callable, optional): Function to call after plot is saved.
-    """
+def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None, csv_path=Path("pr_curve.csv")):
+    """Plots a precision-recall curve and optionally saves the data to a CSV file."""
     fig, ax = plt.subplots(1, 1, figsize=(9, 6), tight_layout=True)
     py = np.stack(py, axis=1)
 
@@ -497,9 +489,20 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
     ax.set_title("Precision-Recall Curve")
     fig.savefig(save_dir, dpi=250)
     plt.close(fig)
+
+    # Ekspor ke CSV
+    df = pd.DataFrame({'Recall': px})
+    if 0 < len(names) < 21:
+        for i, name in enumerate(names.values()):
+            df[f'Precision_{name}'] = py[:, i]
+    else:
+        df['Precision'] = py.mean(1)
+    df.to_csv(csv_path, index=False)
+
     if on_plot:
         on_plot(save_dir)
 
+###########################
 
 @plt_settings()
 def plot_mc_curve(px, py, save_dir=Path("mc_curve.png"), names={}, xlabel="Confidence", ylabel="Metric", on_plot=None):
