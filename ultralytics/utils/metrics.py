@@ -505,11 +505,9 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
     if on_plot:
         on_plot(save_dir)
 
-import pandas as pd
-
 @plt_settings()
-def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None):
-    """Plots a precision-recall curve and saves the data to a CSV file."""
+def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None, csv_path=Path("pr_curve.csv")):
+    """Plots a precision-recall curve and optionally saves the data to a CSV file."""
     fig, ax = plt.subplots(1, 1, figsize=(9, 6), tight_layout=True)
     py = np.stack(py, axis=1)
 
@@ -529,8 +527,7 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
     fig.savefig(save_dir, dpi=250)
     plt.close(fig)
 
-    # Save CSV to same directory as the image
-    csv_path = save_dir.with_suffix(".csv")
+    # Ekspor ke CSV
     df = pd.DataFrame({'Recall': px})
     if 0 < len(names) < 21:
         for i, name in enumerate(names.values()):
@@ -541,7 +538,6 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
 
     if on_plot:
         on_plot(save_dir)
-
 
 def compute_ap(recall, precision):
     """
