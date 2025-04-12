@@ -469,8 +469,8 @@ def smooth(y, f=0.05):
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
 
 @plt_settings()
-def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None):
-    """Plots a precision-recall curve."""
+def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None, csv_path=Path("pr_curve.csv")):
+    """Plots a precision-recall curve and optionally saves the data to a CSV file."""
     fig, ax = plt.subplots(1, 1, figsize=(9, 6), tight_layout=True)
     py = np.stack(py, axis=1)
 
@@ -489,8 +489,19 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
     ax.set_title("Precision-Recall Curve")
     fig.savefig(save_dir, dpi=250)
     plt.close(fig)
+
+    # Ekspor ke CSV
+    df = pd.DataFrame({'Recall': px})
+    if 0 < len(names) < 21:
+        for i, name in enumerate(names.values()):
+            df[f'Precision_{name}'] = py[:, i]
+    else:
+        df['Precision'] = py.mean(1)
+    df.to_csv(csv_path, index=False)
+
     if on_plot:
         on_plot(save_dir)
+        
 
 @plt_settings()
 def plot_mc_curve(px, py, save_dir=Path("mc_curve.png"), names={}, xlabel="Confidence", ylabel="Metric", on_plot=None):
