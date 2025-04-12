@@ -468,9 +468,11 @@ def smooth(y, f=0.05):
     yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
     return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
 
+import pandas as pd
+
 @plt_settings()
-def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None, csv_path=Path("pr_curve.csv")):
-    """Plots a precision-recall curve and optionally saves the data to a CSV file."""
+def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None):
+    """Plots a precision-recall curve and saves the data to a CSV file."""
     fig, ax = plt.subplots(1, 1, figsize=(9, 6), tight_layout=True)
     py = np.stack(py, axis=1)
 
@@ -490,7 +492,8 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
     fig.savefig(save_dir, dpi=250)
     plt.close(fig)
 
-    # Ekspor ke CSV
+    # Save CSV to same directory as the image
+    csv_path = save_dir.with_suffix(".csv")
     df = pd.DataFrame({'Recall': px})
     if 0 < len(names) < 21:
         for i, name in enumerate(names.values()):
@@ -501,40 +504,41 @@ def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=N
 
     if on_plot:
         on_plot(save_dir)
-        
+
+import pandas as pd
 
 @plt_settings()
-def plot_mc_curve(px, py, save_dir=Path("mc_curve.png"), names={}, xlabel="Confidence", ylabel="Metric", on_plot=None):
-    """
-    Plot metric-confidence curve.
-
-    Args:
-        px (np.ndarray): X values for the metric-confidence curve.
-        py (np.ndarray): Y values for the metric-confidence curve.
-        save_dir (Path, optional): Path to save the plot.
-        names (dict, optional): Dictionary mapping class indices to class names.
-        xlabel (str, optional): X-axis label.
-        ylabel (str, optional): Y-axis label.
-        on_plot (callable, optional): Function to call after plot is saved.
-    """
+def plot_pr_curve(px, py, ap, save_dir=Path("pr_curve.png"), names={}, on_plot=None):
+    """Plots a precision-recall curve and saves the data to a CSV file."""
     fig, ax = plt.subplots(1, 1, figsize=(9, 6), tight_layout=True)
+    py = np.stack(py, axis=1)
 
     if 0 < len(names) < 21:  # display per-class legend if < 21 classes
-        for i, y in enumerate(py):
-            ax.plot(px, y, linewidth=1, label=f"{names[i]}")  # plot(confidence, metric)
+        for i, y in enumerate(py.T):
+            ax.plot(px, y, linewidth=1, label=f"{names[i]} {ap[i, 0]:.3f}")  # plot(recall, precision)
     else:
-        ax.plot(px, py.T, linewidth=1, color="grey")  # plot(confidence, metric)
+        ax.plot(px, py, linewidth=1, color="grey")  # plot(recall, precision)
 
-    y = smooth(py.mean(0), 0.1)
-    ax.plot(px, y, linewidth=3, color="blue", label=f"all classes {y.max():.2f} at {px[y.argmax()]:.3f}")
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.plot(px, py.mean(1), linewidth=3, color="blue", label=f"all classes {ap[:, 0].mean():.3f} mAP@0.5")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
-    ax.set_title(f"{ylabel}-Confidence Curve")
+    ax.set_title("Precision-Recall Curve")
     fig.savefig(save_dir, dpi=250)
     plt.close(fig)
+
+    # Save CSV to same directory as the image
+    csv_path = save_dir.with_suffix(".csv")
+    df = pd.DataFrame({'Recall': px})
+    if 0 < len(names) < 21:
+        for i, name in enumerate(names.values()):
+            df[f'Precision_{name}'] = py[:, i]
+    else:
+        df['Precision'] = py.mean(1)
+    df.to_csv(csv_path, index=False)
+
     if on_plot:
         on_plot(save_dir)
 
